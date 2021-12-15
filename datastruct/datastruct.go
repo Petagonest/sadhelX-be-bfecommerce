@@ -37,8 +37,26 @@ type (
 		Produk_id          int64  `json:"produk_id"`
 	}
 
-	Provinsi struct {
+	Provinces struct {
 		Id   int64  `json:"id"`
 		Name string `json:"name"`
+	}
+
+	Regencies struct {
+		Id          int64  `json:"id"`
+		Province_id int64  `json:"province_id"`
+		Name        string `json:"name"`
+	}
+
+	Districts struct {
+		Id         int64  `json:"id"`
+		Regency_id int64  `json:"regency_id"`
+		Name       string `json:"name"`
+	}
+
+	Villages struct {
+		Id          int64  `json:"id"`
+		District_id int64  `json:"district_id"`
+		Name        string `json:"name"`
 	}
 )
