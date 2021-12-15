@@ -1,55 +1,56 @@
 package logging
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
-	"time"
+	"strconv"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
-func GetDateTimeNowInString() string {
-	t := time.Now()
-	return t.Format("2006-01-02 15:04:05")
-}
+func PembuatanKoneksi() (*sql.DB, error) {
+	err := godotenv.Load(".env")
 
-const LOG_PREFIX_LOG string = "LOG"
-const ERROR_PREFIX_LOG string = "ERR"
-const DEBUG_PREFIX_LOG string = "DEBUG"
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
 
-const DEFAULT_LOG_FILE_PATH string = "aph-service.log"
+	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
 
-var logFileName string = DEFAULT_LOG_FILE_PATH
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+"password=%s dbname=%s sslmode=disable",
+		os.Getenv("DB_HOST"), port, os.Getenv("DB_USERNAME"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 
-func SetLogFileName(filename string) {
-	logFileName = filename
-}
+	db, err := sql.Open("postgres", psqlInfo)
 
-func Debug(msg string) {
-	internalLog(msg, DEBUG_PREFIX_LOG)
-}
-
-func Log(msg string) {
-	internalLog(msg, LOG_PREFIX_LOG)
-}
-
-func Error(msg string) {
-	internalLog(msg, LOG_PREFIX_LOG)
-}
-
-func internalLog(msg string, prefix string) {
-	// prepare the message
-	output_msg := fmt.Sprintf("[%s] [%s] %s", prefix, GetDateTimeNowInString(), msg)
-
-	// print to screen and append to log file
-	fmt.Println(output_msg)
-	appendToLogFile(output_msg, prefix)
-}
-
-func appendToLogFile(output_msg string, prefix string) {
-	// append log to file
-	f, err := os.OpenFile(logFileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
-	fmt.Fprintln(f, output_msg)
+
+	err = db.Ping()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return db, nil
+}
+
+//------ utils -----//
+
+func ResponseJSON(w http.ResponseWriter, p interface{}, status int) {
+	ubahkeByte, err := json.Marshal(p)
+	w.Header().Set("Content-Type", "application/json")
+
+	if err != nil {
+		http.Error(w, "error nii om", http.StatusBadRequest)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	w.Write([]byte(ubahkeByte))
 }
